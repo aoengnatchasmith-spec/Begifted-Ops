@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeGifted Scoreboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080E1A;
+  --bg2: #0D1525;
+  --bg3: #131E30;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --blue: #3B82F6;
+  --blue-lt: rgba(59,130,246,0.12);
+  --green: #10B981;
+  --green-lt: rgba(16,185,129,0.12);
+  --yellow: #F59E0B;
+  --yellow-lt: rgba(245,158,11,0.12);
+  --red: #EF4444;
+  --red-lt: rgba(239,68,68,0.12);
+  --purple: #8B5CF6;
+  --purple-lt: rgba(139,92,246,0.12);
+  --white: #FFFFFF;
+  --gray: rgba(255,255,255,0.4);
+  --gray2: rgba(255,255,255,0.6);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background: var(--bg);
+  color: white;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── NOISE TEXTURE ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0; opacity: 0.4;
+}
+
+/* ── GRID LINES ── */
+body::after {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+.wrap { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; padding: 28px 24px 60px; }
+
+/* ── HEADER ── */
+.header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  margin-bottom: 28px; flex-wrap: wrap; gap: 16px;
+}
+.header-left {}
+.header-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 500;
+  color: var(--blue); letter-spacing: 2px; text-transform: uppercase;
+  margin-bottom: 6px;
+  display: flex; align-items: center; gap: 8px;
+}
+.header-eyebrow::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--blue);
+  display: inline-block;
+}
+.header-title {
+  font-size: 30px; font-weight: 900; letter-spacing: -1px;
+  line-height: 1.05; margin-bottom: 6px;
+}
+.header-title span { color: var(--blue); }
+.header-sub { font-size: 12px; color: var(--gray); }
+
+.header-right { text-align: right; }
+.week-badge {
+  background: var(--blue-lt);
+  border: 1px solid rgba(59,130,246,0.3);
+  border-radius: 10px;
+  padding: 10px 16px;
+  display: inline-block;
+  margin-bottom: 8px;
+}
+.week-num { font-family: 'JetBrains Mono', monospace; font-size: 28px; font-weight: 600; color: var(--blue); line-height: 1; }
+.week-label { font-size: 10px; color: var(--gray); text-transform: uppercase; letter-spacing: 0.8px; margin-top: 2px; }
+.live-dot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 6px;
+  font-size: 10px; color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+}
+.live-dot::before {
+  content: '';
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--green);
+  animation: pulse 1.5s infinite;
+  display: inline-block;
+}
+@keyframes pulse {
+  0%,100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.3); }
+}
+
+/* ── WIG BANNER ── */
+.wig-banner {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.1));
+  border: 1px solid rgba(59,130,246,0.25);
+  border-radius: 14px;
+  padding: 16px 22px;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+}
+.wig-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 600;
+  color: var(--blue); text-transform: uppercase; letter-spacing: 1.5px;
+  background: var(--blue-lt); border: 1px solid rgba(59,130,246,0.3);
+  padding: 3px 10px; border-radius: 4px; flex-shrink: 0;
+}
+.wig-text { font-size: 14px; font-weight: 600; color: white; flex: 1; }
+.wig-text em { font-style: normal; color: var(--blue); }
+.wig-deadline {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; color: var(--gray2);
+  background: rgba(255,255,255,0.05);
+  padding: 4px 12px; border-radius: 6px;
+  flex-shrink: 0;
+}
+
+/* ── MAIN METRICS GRID ── */
+.metrics-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 20px; }
+
+.metric-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+  cursor: default;
+}
+.metric-card:hover { transform: translateY(-2px); }
+.metric-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+}
+.metric-card.blue { border-color: rgba(59,130,246,0.2); }
+.metric-card.blue::before { background: linear-gradient(90deg, var(--blue), transparent); }
+.metric-card.blue:hover { border-color: rgba(59,130,246,0.4); }
+.metric-card.green { border-color: rgba(16,185,129,0.2); }
+.metric-card.green::before { background: linear-gradient(90deg, var(--green), transparent); }
+.metric-card.green:hover { border-color: rgba(16,185,129,0.4); }
+.metric-card.yellow { border-color: rgba(245,158,11,0.2); }
+.metric-card.yellow::before { background: linear-gradient(90deg, var(--yellow), transparent); }
+.metric-card.yellow:hover { border-color: rgba(245,158,11,0.4); }
+.metric-card.red { border-color: rgba(239,68,68,0.25); }
+.metric-card.red::before { background: linear-gradient(90deg, var(--red), transparent); }
+.metric-card.red:hover { border-color: rgba(239,68,68,0.4); }
+.metric-card.purple { border-color: rgba(139,92,246,0.2); }
+.metric-card.purple::before { background: linear-gradient(90deg, var(--purple), transparent); }
+
+/* glow bg */
+.metric-card.blue::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:radial-gradient(circle, rgba(59,130,246,0.08), transparent 70%); border-radius:50%; }
+.metric-card.green::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:radial-gradient(circle, rgba(16,185,129,0.08), transparent 70%); border-radius:50%; }
+.metric-card.yellow::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background:radial-gradient(circle, rgba(245,158,11,0.08), transparent 70%); border-radius:50%; }
+
+.metric-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.metric-label { font-size: 10px; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 2px; }
+.metric-type { font-size: 9px; font-family: 'JetBrains Mono', monospace; }
+.metric-type.lead { color: var(--green); }
+.metric-type.lag { color: var(--gray); }
+.metric-icon { font-size: 18px; opacity: 0.7; }
+
+.metric-value-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; }
+.metric-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 34px; font-weight: 600; line-height: 1;
+  letter-spacing: -1px;
+}
+.metric-card.blue .metric-value { color: var(--blue); }
+.metric-card.green .metric-value { color: var(--green); }
+.metric-card.yellow .metric-value { color: var(--yellow); }
+.metric-card.red .metric-value { color: var(--red); }
+.metric-card.purple .metric-value { color: var(--purple); }
+
+.metric-unit { font-size: 13px; color: var(--gray); margin-bottom: 4px; font-weight: 500; }
+.metric-target { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gray); }
+.metric-target b { color: rgba(255,255,255,0.5); }
+
+/* progress arc + bar */
+.metric-bar-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.metric-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.06); border-radius: 99px; overflow: hidden; }
+.metric-bar-fill { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+.blue .metric-bar-fill { background: linear-gradient(90deg, var(--blue), #60A5FA); }
+.green .metric-bar-fill { background: linear-gradient(90deg, var(--green), #34D399); }
+.yellow .metric-bar-fill { background: linear-gradient(90deg, var(--yellow), #FCD34D); }
+.red .metric-bar-fill { background: linear-gradient(90deg, var(--red), #F87171); }
+.purple .metric-bar-fill { background: linear-gradient(90deg, var(--purple), #A78BFA); }
+
+.metric-pct {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 500;
+  width: 36px; text-align: right; flex-shrink: 0;
+}
+.blue .metric-pct { color: var(--blue); }
+.green .metric-pct { color: var(--green); }
+.yellow .metric-pct { color: var(--yellow); }
+.red .metric-pct { color: var(--red); }
+.purple .metric-pct { color: var(--purple); }
+
+.metric-footer { display: flex; align-items: center; justify-content: space-between; }
+.metric-delta { font-size: 11px; display: flex; align-items: center; gap: 4px; }
+.delta-up { color: var(--green); }
+.delta-down { color: var(--red); }
+.delta-neutral { color: var(--gray); }
+.metric-status {
+  font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+.status-win { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.2); }
+.status-watch { background: rgba(245,158,11,0.15); color: var(--yellow); border: 1px solid rgba(245,158,11,0.2); }
+.status-lose { background: rgba(239,68,68,0.15); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+.status-base { background: rgba(255,255,255,0.05); color: var(--gray); border: 1px solid var(--border); }
+
+/* ── BOTTOM TWO-COL ── */
+.bottom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 20px; }
+
+/* weekly history */
+.history-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+}
+.card-title {
+  font-size: 11px; font-weight: 700; color: var(--gray2);
+  text-transform: uppercase; letter-spacing: 0.8px;
+  margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.card-title-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+.history-rows { display: flex; flex-direction: column; gap: 10px; }
+.history-row { display: flex; align-items: center; gap: 10px; }
+.history-week {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; color: var(--gray);
+  width: 32px; flex-shrink: 0;
+}
+.history-bars { display: flex; gap: 4px; flex: 1; }
+.hbar-wrap { flex: 1; }
+.hbar-label { font-size: 8px; color: var(--gray); margin-bottom: 2px; text-align: center; }
+.hbar { height: 28px; border-radius: 4px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 3px; position: relative; overflow: hidden; }
+.hbar-val { font-size: 9px; font-family: 'JetBrains Mono', monospace; font-weight: 500; color: rgba(255,255,255,0.7); position: relative; z-index: 1; }
+.history-verdict { font-size: 10px; width: 50px; text-align: right; flex-shrink: 0; }
+
+/* commitment log */
+.commit-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+}
+.commit-items { display: flex; flex-direction: column; gap: 10px; }
+.commit-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px;
+  background: rgba(255,255,255,0.03);
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  transition: border-color 0.15s;
+  cursor: pointer;
+}
+.commit-item:hover { border-color: var(--border2); }
+.commit-check {
+  width: 18px; height: 18px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0; margin-top: 1px;
+  cursor: pointer; transition: all 0.15s;
+}
+.commit-check.done { background: var(--green); border: none; }
+.commit-check.pending { background: transparent; border: 1.5px solid rgba(255,255,255,0.15); }
+.commit-check.blocked { background: var(--red-lt); border: 1px solid var(--red); }
+.commit-body { flex: 1; }
+.commit-text { font-size: 12px; color: rgba(255,255,255,0.8); line-height: 1.4; margin-bottom: 4px; }
+.commit-text.strikethrough { text-decoration: line-through; color: var(--gray); }
+.commit-meta { display: flex; gap: 6px; align-items: center; }
+.commit-owner {
+  font-size: 10px; font-family: 'JetBrains Mono', monospace;
+  padding: 1px 7px; border-radius: 4px;
+}
+.commit-due { font-size: 10px; color: var(--gray); }
+
+/* ── WIN/LOSE BANNER ── */
+.verdict-banner {
+  border-radius: 14px;
+  padding: 16px 22px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 14px;
+  border: 1px solid;
+}
+.verdict-banner.winning {
+  background: rgba(16,185,129,0.08);
+  border-color: rgba(16,185,129,0.2);
+}
+.verdict-banner.watching {
+  background: rgba(245,158,11,0.08);
+  border-color: rgba(245,158,11,0.2);
+}
+.verdict-icon { font-size: 28px; flex-shrink: 0; }
+.verdict-title { font-size: 15px; font-weight: 700; margin-bottom: 2px; }
+.winning .verdict-title { color: var(--green); }
+.watching .verdict-title { color: var(--yellow); }
+.verdict-sub { font-size: 12px; color: var(--gray2); }
+.verdict-right { margin-left: auto; text-align: right; flex-shrink: 0; }
+.verdict-score {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 22px; font-weight: 600;
+}
+.winning .verdict-score { color: var(--green); }
+.watching .verdict-score { color: var(--yellow); }
+.verdict-score-label { font-size: 10px; color: var(--gray); }
+
+/* ── INTERACTIVE SLIDER ── */
+.sim-card {
+  background: var(--bg2);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 14px; padding: 18px;
+  margin-bottom: 20px;
+}
+.sim-title { font-size: 11px; font-weight: 700; color: var(--purple); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 14px; display: flex; align-items: center; gap: 7px; }
+.sim-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.sim-item { }
+.sim-label { font-size: 11px; color: var(--gray2); margin-bottom: 6px; }
+.sim-input { width: 100%; appearance: none; background: rgba(255,255,255,0.06); height: 4px; border-radius: 99px; outline: none; cursor: pointer; }
+.sim-input::-webkit-slider-thumb { appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--purple); cursor: pointer; border: 2px solid var(--bg); }
+.sim-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px; font-weight: 600; color: var(--purple);
+  margin-top: 6px;
+}
+.sim-result {
+  margin-top: 14px;
+  padding: 12px 16px;
+  background: var(--purple-lt);
+  border: 1px solid rgba(139,92,246,0.2);
+  border-radius: 9px;
+  font-size: 12px; color: rgba(255,255,255,0.7);
+}
+.sim-result b { color: var(--purple); }
+
+/* ── FOOTER NOTE ── */
+.footer-note {
+  text-align: center;
+  font-size: 11px; color: var(--gray);
+  margin-top: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+@media (max-width: 768px) {
+  .metrics-grid { grid-template-columns: 1fr 1fr; }
+  .bottom-grid { grid-template-columns: 1fr; }
+  .sim-grid { grid-template-columns: 1fr; }
+  .header-title { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="header-eyebrow">BeGifted Ops · Sales Process Rebuild</div>
+      <div class="header-title">Team <span>Scoreboard</span></div>
+      <div class="header-sub">D3 of 4DX · ทีมเห็นภาพรวมได้ใน 5 วินาที</div>
+    </div>
+    <div class="header-right">
+      <div class="week-badge">
+        <div class="week-num" id="weekNum">1</div>
+        <div class="week-label">of 6 weeks</div>
+      </div>
+      <div class="live-dot" id="liveDate">—</div>
+    </div>
+  </div>
+
+  <!-- WIG BANNER -->
+  <div class="wig-banner">
+    <span class="wig-label">WIG</span>
+    <span class="wig-text">เพิ่ม trial-to-close rate จาก <em>35%</em> → <em>60%</em> ภายใน 30 เม.ย. 2024</span>
+    <span class="wig-deadline" id="daysLeft">— days left</span>
+  </div>
+
+  <!-- VERDICT -->
+  <div class="verdict-banner watching" id="verdictBanner">
+    <div class="verdict-icon">⚡</div>
+    <div>
+      <div class="verdict-title" id="verdictTitle">Early Stage — Establishing Baseline</div>
+      <div class="verdict-sub" id="verdictSub">Week 1: กำลังวัด baseline ก่อนเริ่มเปลี่ยน — Lead Measures คือสิ่งที่ต้องขยับค่ะ</div>
+    </div>
+    <div class="verdict-right">
+      <div class="verdict-score" id="verdictScore">2/5</div>
+      <div class="verdict-score-label">metrics on track</div>
+    </div>
+  </div>
+
+  <!-- MAIN METRICS -->
+  <div class="metrics-grid">
+
+    <!-- M1 -->
+    <div class="metric-card blue">
+      <div class="metric-top">
+        <div>
+          <div class="metric-label">Pretest Completion</div>
+          <div class="metric-type lead">● LEAD MEASURE</div>
+        </div>
+        <div class="metric-icon">📋</div>
+      </div>
+      <div class="metric-value-row">
+        <div class="metric-value" id="m1val">—</div>
+        <div class="metric-unit">%</div>
+      </div>
+      <div class="metric-target">Target: <b>≥ 70%</b> · within 3 days of registration</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar"><div class="metric-bar-fill" id="m1bar" style="width:0%"></div></div>
+        <div class="metric-pct" id="m1pct">—</div>
+      </div>
+      <div class="metric-footer">
+        <div class="metric-delta delta-neutral" id="m1delta">📊 Measuring baseline</div>
+        <div class="metric-status status-base" id="m1status">BASELINE</div>
+      </div>
+    </div>
+
+    <!-- M2 -->
+    <div class="metric-card green">
+      <div class="metric-top">
+        <div>
+          <div class="metric-label">Marking Turnaround</div>
+          <div class="metric-type lead">● LEAD MEASURE</div>
+        </div>
+        <div class="metric-icon">⏱️</div>
+      </div>
+      <div class="metric-value-row">
+        <div class="metric-value" id="m2val">—</div>
+        <div class="metric-unit">hrs avg</div>
+      </div>
+      <div class="metric-target">Target: <b>≤ 24h</b> · from pretest received</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar"><div class="metric-bar-fill" id="m2bar" style="width:0%"></div></div>
+        <div class="metric-pct" id="m2pct">—</div>
+      </div>
+      <div class="metric-footer">
+        <div class="metric-delta delta-neutral" id="m2delta">📊 Measuring baseline</div>
+        <div class="metric-status status-base" id="m2status">BASELINE</div>
+      </div>
+    </div>
+
+    <!-- M3 -->
+    <div class="metric-card yellow">
+      <div class="metric-top">
+        <div>
+          <div class="metric-label">Report Turnaround</div>
+          <div class="metric-type lead">● LEAD MEASURE</div>
+        </div>
+        <div class="metric-icon">📄</div>
+      </div>
+      <div class="metric-value-row">
+        <div class="metric-value" id="m3val">—</div>
+        <div class="metric-unit">min</div>
+      </div>
+      <div class="metric-target">Target: <b>≤ 5 min</b> · after trial ends</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar"><div class="metric-bar-fill" id="m3bar" style="width:0%"></div></div>
+        <div class="metric-pct" id="m3pct">—</div>
+      </div>
+      <div class="metric-footer">
+        <div class="metric-delta delta-neutral" id="m3delta">🔨 Building AI system</div>
+        <div class="metric-status status-base" id="m3status">BUILDING</div>
+      </div>
+    </div>
+
+    <!-- M4 -->
+    <div class="metric-card red">
+      <div class="metric-top">
+        <div>
+          <div class="metric-label">4-Pillar Form Completion</div>
+          <div class="metric-type lead">● LEAD MEASURE</div>
+        </div>
+        <div class="metric-icon">📝</div>
+      </div>
+      <div class="metric-value-row">
+        <div class="metric-value" id="m4val">0</div>
+        <div class="metric-unit">/ 10 trials</div>
+      </div>
+      <div class="metric-target">Target: <b>100%</b> · every trial, every tutor</div>
+      <div class="metric-bar-wrap">
+        <div class="metric-bar"><div class="metric-bar-fill" id="m4bar" style="width:0%"></div></div>
+        <div class="metric-pct" id="m4pct">0%</div>
+      </div>
+      <div class="metric-footer">
+        <div class="metric-delta delta-neutral">⚪ Not started yet</div>
+        <div class="metric-status status-lose">NOT STARTED</div>
+      </div>
+    </div>
+
+    <!-- M5 -->
+    <div class="metric-card purple" style="grid-column: span 2;">
+      <div class="metric-top">
+        <div>
+          <div class="metric-label">Trial-to-Close Rate (WIG Lag)</div>
+          <div class="metric-type lag">○ LAG MEASURE · the goal we're chasing</div>
+        </div>
+        <div class="metric-icon">🎯</div>
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:40px; flex-wrap:wrap;">
+        <div>
+          <div style="font-size:10px;color:var(--gray);margin-bottom:4px;">BASELINE (Before)</div>
+          <div class="metric-value-row">
+            <div class="metric-value" style="color:var(--gray);font-size:28px;">35%</div>
+          </div>
+        </div>
+        <div style="font-size:28px;color:var(--gray);margin-bottom:4px;">→</div>
+        <div>
+          <div style="font-size:10px;color:var(--purple);margin-bottom:4px;">CURRENT</div>
+          <div class="metric-value-row">
+            <div class="metric-value">—</div>
+            <div class="metric-unit">%</div>
+          </div>
+        </div>
+        <div style="font-size:28px;color:var(--gray);margin-bottom:4px;">→</div>
+        <div>
+          <div style="font-size:10px;color:var(--green);margin-bottom:4px;">TARGET</div>
+          <div class="metric-value-row">
+            <div class="metric-value" style="color:var(--green);font-size:28px;">60%</div>
+          </div>
+        </div>
+        <div style="flex:1;min-width:200px;">
+          <div class="metric-bar-wrap" style="margin-bottom:4px;">
+            <div class="metric-bar" style="height:8px;">
+              <div class="metric-bar-fill" style="width:0%;background:linear-gradient(90deg,var(--purple),var(--blue))"></div>
+            </div>
+          </div>
+          <div style="font-size:10px;color:var(--gray);">Progress toward WIG · currently at baseline</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- BOTTOM GRID -->
+  <div class="bottom-grid">
+
+    <!-- WEEKLY HISTORY -->
+    <div class="history-card">
+      <div class="card-title">
+        <div class="card-title-dot" style="background:var(--blue)"></div>
+        Weekly Trend
+      </div>
+      <div class="history-rows">
+        <div class="history-row">
+          <div class="history-week">Wk1</div>
+          <div class="history-bars">
+            <div class="hbar-wrap">
+              <div class="hbar-label" style="color:var(--blue);font-size:8px">Pretest</div>
+              <div class="hbar" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2)">
+                <span class="hbar-val" style="color:var(--gray)">—</span>
+              </div>
+            </div>
+            <div class="hbar-wrap">
+              <div class="hbar-label" style="color:var(--green);font-size:8px">Marking</div>
+              <div class="hbar" style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.2)">
+                <span class="hbar-val" style="color:var(--gray)">—</span>
+              </div>
+            </div>
+            <div class="hbar-wrap">
+              <div class="hbar-label" style="color:var(--yellow);font-size:8px">Report</div>
+              <div class="hbar" style="background:rgba(245,158,11,0.1);border:1px solid rgba(245,158,11,0.2)">
+                <span class="hbar-val" style="color:var(--gray)">—</span>
+              </div>
+            </div>
+          </div>
+          <div class="history-verdict"><span class="metric-status status-base" style="font-size:9px">WEEK 1</span></div>
+        </div>
+        <div style="padding:8px 0; font-size:10px;color:var(--gray);text-align:center;font-family:'JetBrains Mono',monospace;">
+          · Weeks 2–6 will appear as data comes in ·
+        </div>
+      </div>
+    </div>
+
+    <!-- THIS WEEK COMMITMENTS -->
+    <div class="commit-card">
+      <div class="card-title">
+        <div class="card-title-dot" style="background:var(--purple)"></div>
+        This Week's Commitments
+        <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--gray);margin-left:4px;">Wk 1 · Mar 16–21</span>
+      </div>
+      <div class="commit-items">
+        <div class="commit-item" onclick="toggleCommit(this)">
+          <div class="commit-check done">✓</div>
+          <div class="commit-body">
+            <div class="commit-text strikethrough">สร้าง Master Leads Sheet structure</div>
+            <div class="commit-meta">
+              <span class="commit-owner" style="background:rgba(59,130,246,0.15);color:var(--blue)">You</span>
+              <span class="commit-due">Mar 20 · Done ✅</span>
+            </div>
+          </div>
+        </div>
+        <div class="commit-item" onclick="toggleCommit(this)">
+          <div class="commit-check pending"></div>
+          <div class="commit-body">
+            <div class="commit-text">Brief tutors on 45+5+10 trial format</div>
+            <div class="commit-meta">
+              <span class="commit-owner" style="background:rgba(59,130,246,0.15);color:var(--blue)">You</span>
+              <span class="commit-due">Mar 20</span>
+            </div>
+          </div>
+        </div>
+        <div class="commit-item" onclick="toggleCommit(this)">
+          <div class="commit-check pending"></div>
+          <div class="commit-body">
+            <div class="commit-text">Design 4-pillar mobile form (Google Form)</div>
+            <div class="commit-meta">
+              <span class="commit-owner" style="background:rgba(59,130,246,0.15);color:var(--blue)">You</span>
+              <span class="commit-due">Mar 21</span>
+            </div>
+          </div>
+        </div>
+        <div class="commit-item" onclick="toggleCommit(this)">
+          <div class="commit-check blocked">!</div>
+          <div class="commit-body">
+            <div class="commit-text">Confirm LINE OA admin access</div>
+            <div class="commit-meta">
+              <span class="commit-owner" style="background:rgba(239,68,68,0.15);color:var(--red)">Blocked</span>
+              <span class="commit-due">🚫 ไม่มีใคร confirm ว่าใครมี access</span>
+            </div>
+          </div>
+        </div>
+        <div class="commit-item" onclick="toggleCommit(this)">
+          <div class="commit-check pending"></div>
+          <div class="commit-body">
+            <div class="commit-text">Schedule 1-on-1 กับ team ทุกคน</div>
+            <div class="commit-meta">
+              <span class="commit-owner" style="background:rgba(59,130,246,0.15);color:var(--blue)">You</span>
+              <span class="commit-due">Mar 21 · 0/8 done</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIMULATOR -->
+  <div class="sim-card">
+    <div class="sim-title">
+      <span>🧪</span> What-If Simulator — ถ้า Lead Measures ขยับ Lag จะเปลี่ยนยังไง?
+    </div>
+    <div class="sim-grid">
+      <div class="sim-item">
+        <div class="sim-label">Pretest completion rate (%)</div>
+        <input type="range" class="sim-input" min="20" max="100" value="35" id="s1" oninput="updateSim()">
+        <div class="sim-val" id="s1val">35%</div>
+      </div>
+      <div class="sim-item">
+        <div class="sim-label">Report ready &lt;5 min (%)</div>
+        <input type="range" class="sim-input" min="0" max="100" value="0" id="s2" oninput="updateSim()">
+        <div class="sim-val" id="s2val">0%</div>
+      </div>
+      <div class="sim-item">
+        <div class="sim-label">4-Pillar form filled (%)</div>
+        <input type="range" class="sim-input" min="0" max="100" value="0" id="s3" oninput="updateSim()">
+        <div class="sim-val" id="s3val">0%</div>
+      </div>
+    </div>
+    <div class="sim-result" id="simResult">
+      ลองขยับ sliders ด้านบนเพื่อดูว่าถ้า Lead Measures ดีขึ้น close rate จะเปลี่ยนยังไงค่ะ
+    </div>
+  </div>
+
+  <div class="footer-note">BeGifted · Sales Process Rebuild Scoreboard · Updated weekly every Friday · D3 of 4DX</div>
+
+</div>
+
+<script>
+// ── DATE & WEEK ──
+function init() {
+  const now = new Date();
+  document.getElementById('liveDate').textContent =
+    now.toLocaleDateString('en-GB', {weekday:'short', day:'numeric', month:'short', year:'numeric'});
+
+  // days left until Apr 30
+  const target = new Date('2024-04-30');
+  const diff = Math.ceil((target - now) / (1000 * 60 * 60 * 24));
+  document.getElementById('daysLeft').textContent = diff > 0 ? `${diff} days left` : 'Deadline passed';
+
+  // animate bars on load
+  setTimeout(() => {
+    // M4 only has data (0)
+    document.getElementById('m4bar').style.width = '0%';
+  }, 300);
+}
+
+// ── COMMIT TOGGLE ──
+function toggleCommit(el) {
+  const check = el.querySelector('.commit-check');
+  const text = el.querySelector('.commit-text');
+  if (check.classList.contains('done')) {
+    check.classList.remove('done');
+    check.classList.add('pending');
+    check.textContent = '';
+    text.classList.remove('strikethrough');
+  } else if (check.classList.contains('pending')) {
+    check.classList.remove('pending');
+    check.classList.add('done');
+    check.textContent = '✓';
+    text.classList.add('strikethrough');
+  }
+}
+
+// ── SIMULATOR ──
+function updateSim() {
+  const s1 = parseInt(document.getElementById('s1').value);
+  const s2 = parseInt(document.getElementById('s2').value);
+  const s3 = parseInt(document.getElementById('s3').value);
+
+  document.getElementById('s1val').textContent = s1 + '%';
+  document.getElementById('s2val').textContent = s2 + '%';
+  document.getElementById('s3val').textContent = s3 + '%';
+
+  // estimated close rate based on lead measures
+  const base = 35;
+  const pretestImpact = (s1 - 35) * 0.15;
+  const reportImpact  = s2 * 0.12;
+  const formImpact    = s3 * 0.08;
+  const estimated = Math.min(Math.max(Math.round(base + pretestImpact + reportImpact + formImpact), base), 85);
+
+  const gap = estimated - 60;
+  let msg = '';
+  if (estimated >= 60) {
+    msg = `🎯 Estimated close rate: <b style="color:#10B981">${estimated}%</b> — <b style="color:#10B981">WIG ACHIEVED! ✅</b> ถ้า Lead Measures ทำได้ตามนี้จริงๆ ค่ะ`;
+  } else if (estimated >= 50) {
+    msg = `📈 Estimated close rate: <b style="color:#F59E0B">${estimated}%</b> — ใกล้แล้ว! เหลืออีก <b>${60-estimated}%</b> ถึง WIG · ลองเพิ่ม Report หรือ Form ให้สูงขึ้นค่ะ`;
+  } else {
+    msg = `📊 Estimated close rate: <b style="color:#8B5CF6">${estimated}%</b> — ยังต้องขยับ Lead Measures อีกค่ะ เป้าที่ 60% ยังห่างอยู่ ${60-estimated}%`;
+  }
+  document.getElementById('simResult').innerHTML = msg;
+}
+
+init();
+</script>
+</body>
+</html>
