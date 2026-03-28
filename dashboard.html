@@ -138,7 +138,7 @@
   .tooltip { position: fixed; background: var(--text); color: white; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 11px; font-family: 'DM Mono', monospace; pointer-events: none; z-index: 9999; white-space: nowrap; opacity: 0; transition: opacity 0.1s; }
   .timeline-wrap { margin-top: 14px; }
   .timeline-title { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
-  .timeline-row { display: grid; grid-template-columns: 80px 40px 60px 1fr 80px; gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .timeline-row { display: grid; grid-template-columns: 70px 40px 50px 1fr; gap: 8px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
   .timeline-row.header { color: var(--text-3); font-weight: 600; }
   .timeline-row.alert-row { background: rgba(192,57,43,0.04); margin: 0 -2px; padding-left: 2px; border-radius: 4px; }
   .timeline-row.exhaust-row { background: rgba(192,57,43,0.08); margin: 0 -2px; padding-left: 2px; border-radius: 4px; }
@@ -419,23 +419,25 @@ function renderPackageCard(p, s) {
       ${p.projection.length?`
       <div class="timeline-wrap">
         <div class="timeline-title">Credit projection</div>
-        <div class="timeline-row header">
-          <span>Date</span><span style="text-align:right">Min</span><span style="text-align:right">−Cr.</span><span>Balance</span><span></span>
+        <div class="timeline-row header" style="border-bottom:1.5px solid var(--border-strong);padding-bottom:5px;margin-bottom:2px">
+          <span>Date</span><span style="text-align:right">Min</span><span style="text-align:right">−Cr.</span><span style="text-align:right">Balance</span>
         </div>
         ${p.projection.map(r=>{
           const rowCls = r.flag==='alert'?'alert-row':r.flag==='exhaust'?'exhaust-row':'';
           const balCls = r.bal<0?'red':r.bal<2?'red':r.bal<4?'yellow':'green';
           const balPct = Math.max(0,Math.min(1,r.bal/p.totalCredits));
           return `<div class="timeline-row ${rowCls}">
-            <span class="tl-date">${r.date.slice(5)}</span>
+            <span class="tl-date">${new Date(r.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}</span>
             <span class="tl-dur">${r.dur}m</span>
             <span class="tl-deduct">−${r.deduct}</span>
-            <div class="tl-bar-wrap">
-              <div style="flex:1;height:4px;background:var(--gray-light);border-radius:2px;overflow:hidden">
-                <div style="height:100%;width:${(balPct*100).toFixed(1)}%;background:${r.bal<2?'#C0392B':r.bal<4?'#D4870A':'#1A7A4A'};border-radius:2px"></div>
-              </div>
+            <div>
+              ${r.bal >= 0
+                ? `<div style="height:5px;background:var(--gray-light);border-radius:3px;overflow:hidden;margin-bottom:3px">
+                     <div style="height:100%;width:${Math.max(0,Math.min(100,(r.bal/p.totalCredits*100))).toFixed(1)}%;background:${r.bal>=4?'#1A7A4A':r.bal>=2?'#D4870A':'#C0392B'};border-radius:3px"></div>
+                   </div>
+                   <div style="text-align:right;font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--${balCls})">${r.bal.toFixed(1)}</div>`
+                : `<div style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;font-weight:700;color:var(--red)">${r.bal.toFixed(1)}</div>`}
             </div>
-            <span class="tl-bal" style="color:var(--${balCls})">${r.bal.toFixed(1)}</span>
           </div>`;
         }).join('')}
       </div>`:''}
