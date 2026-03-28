@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeGifted — Package Expiry Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #F7F5F0;
+    --surface: #FFFFFF;
+    --surface2: #F0EDE6;
+    --orange: #FE7622;
+    --orange-light: #FFF0E6;
+    --orange-dark: #D95F0A;
+    --blue: #0145A8;
+    --blue-light: #E8EFFC;
+    --blue-dark: #013080;
+    --cream: #EEE8D8;
+    --red: #C0392B;
+    --red-light: #FDECEB;
+    --yellow: #D4870A;
+    --yellow-light: #FEF9EC;
+    --green: #1A7A4A;
+    --green-light: #E8F5EE;
+    --gray: #6B7280;
+    --gray-light: #F3F4F6;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text: #1A1A2E;
+    --text-2: #4A4A6A;
+    --text-3: #8A8AAA;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 4px 24px rgba(0,0,0,0.10);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; line-height: 1.5; }
+  .topbar { background: var(--blue); padding: 0 28px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .brand-dot { width: 28px; height: 28px; background: var(--orange); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px; color: white; }
+  .brand-name { font-weight: 700; font-size: 15px; color: white; letter-spacing: -0.02em; }
+  .brand-sub { font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 1px; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .today-badge { font-size: 12px; color: rgba(255,255,255,0.75); background: rgba(255,255,255,0.12); padding: 4px 10px; border-radius: 20px; }
+  .layout { display: grid; grid-template-columns: 340px 1fr; gap: 0; height: calc(100vh - 56px); }
+  .left-panel { background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  .panel-header { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+  .panel-title { font-weight: 700; font-size: 13px; color: var(--text); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+  .summary-pills { display: flex; gap: 6px; flex-wrap: wrap; }
+  .s-pill { display: flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1.5px solid transparent; transition: all 0.15s; }
+  .s-pill.active { border-color: currentColor; }
+  .s-pill.all { background: var(--blue-light); color: var(--blue); }
+  .s-pill.notify { background: var(--red-light); color: var(--red); }
+  .s-pill.watch { background: var(--yellow-light); color: var(--yellow); }
+  .s-pill.ok { background: var(--green-light); color: var(--green); }
+  .search-wrap { padding: 10px 18px; border-bottom: 1px solid var(--border); }
+  .search-input { width: 100%; padding: 7px 10px; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 13px; color: var(--text); background: var(--bg); outline: none; }
+  .search-input::placeholder { color: var(--text-3); }
+  .search-input:focus { border-color: var(--blue); }
+  .student-list { overflow-y: auto; flex: 1; }
+  .student-item { padding: 12px 18px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.12s; display: flex; align-items: center; gap: 12px; }
+  .student-item:hover { background: var(--gray-light); }
+  .student-item.active { background: var(--blue-light); }
+  .student-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+  .student-info { flex: 1; min-width: 0; }
+  .student-name { font-weight: 600; font-size: 13px; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .student-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+  .pkg-count { font-size: 10px; color: var(--text-3); }
+  .right-panel { overflow-y: auto; padding: 24px 28px; background: var(--bg); }
+  .overview-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; box-shadow: var(--shadow); }
+  .metric-label { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .metric-value { font-size: 28px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+  .metric-value.red { color: var(--red); }
+  .metric-value.yellow { color: var(--yellow); }
+  .metric-value.green { color: var(--green); }
+  .metric-value.blue { color: var(--blue); }
+  .metric-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+  .section-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .section-head h2 { font-size: 15px; font-weight: 700; color: var(--text); }
+  .section-badge { background: var(--orange); color: white; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px; }
+  .alert-table { background: var(--surface); border-radius: var(--radius); border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow); margin-bottom: 24px; width: 100%; }
+  .alert-table table { width: 100%; border-collapse: collapse; }
+  .alert-table th { padding: 10px 14px; font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; text-align: left; background: var(--surface2); border-bottom: 1px solid var(--border); }
+  .alert-table td { padding: 11px 14px; font-size: 13px; color: var(--text); border-bottom: 1px solid var(--border); vertical-align: middle; }
+  .alert-table tr:last-child td { border-bottom: none; }
+  .alert-table tr:hover td { background: var(--gray-light); cursor: pointer; }
+  .status-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .status-chip.notify { background: var(--red-light); color: var(--red); }
+  .status-chip.watch { background: var(--yellow-light); color: var(--yellow); }
+  .status-chip.ok { background: var(--green-light); color: var(--green); }
+  .status-chip.nodata { background: var(--gray-light); color: var(--gray); }
+  .detail-header { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 20px; display: flex; align-items: center; gap: 16px; box-shadow: var(--shadow); }
+  .detail-avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 18px; }
+  .detail-name { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+  .detail-parent { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+  .detail-meta { display: flex; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .detail-tag { font-size: 11px; background: var(--blue-light); color: var(--blue); padding: 2px 8px; border-radius: 20px; font-weight: 500; }
+  .packages-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .pkg-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); }
+  .pkg-card-header { padding: 14px 16px 12px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; }
+  .pkg-name { font-weight: 700; font-size: 13px; color: var(--text); }
+  .pkg-stat-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; }
+  .pkg-stat-value { font-size: 20px; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; }
+  .pkg-card-body { padding: 14px 16px; }
+  .credit-bar-wrap { margin-bottom: 12px; }
+  .credit-bar-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--text-3); margin-bottom: 5px; }
+  .credit-bar-track { height: 6px; background: var(--gray-light); border-radius: 3px; overflow: hidden; }
+  .credit-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+  .alert-info-box { border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; font-size: 12px; }
+  .alert-info-box.notify { background: var(--red-light); border-left: 3px solid var(--red); border-radius: 0; }
+  .alert-info-box.watch { background: var(--yellow-light); border-left: 3px solid var(--yellow); border-radius: 0; }
+  .alert-info-box.nodata { background: var(--gray-light); border-left: 3px solid var(--text-3); border-radius: 0; }
+  .alert-info-row { display: flex; justify-content: space-between; margin-top: 4px; }
+  .alert-info-row span:first-child { color: var(--text-3); }
+  .alert-info-row span:last-child { font-weight: 600; color: var(--text); }
+  .calendar-section { margin-top: 20px; }
+  .cal-title { font-size: 13px; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+  .cal-months-container { overflow-x: auto; }
+  .cal-months { display: flex; gap: 16px; min-width: max-content; padding-bottom: 8px; }
+  .cal-month { min-width: 200px; }
+  .cal-month-name { font-size: 11px; font-weight: 700; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .cal-dow { font-size: 9px; color: var(--text-3); font-weight: 600; text-align: center; padding: 2px 0; text-transform: uppercase; }
+  .cal-day { aspect-ratio: 1; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 500; color: var(--text-3); cursor: default; }
+  .cal-day.session { font-weight: 700; cursor: pointer; transition: transform 0.1s; }
+  .cal-day.session:hover { transform: scale(1.15); }
+  .cal-day.session.ok { background: var(--green-light); color: var(--green); }
+  .cal-day.session.watch { background: var(--yellow-light); color: var(--yellow); }
+  .cal-day.session.alert { background: var(--red-light); color: var(--red); }
+  .cal-day.session.exhaust { background: var(--red); color: white; }
+  .cal-day.today-mark { border: 1.5px solid var(--blue); }
+  .cal-legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+  .cal-leg { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-3); }
+  .cal-leg-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .tooltip { position: fixed; background: var(--text); color: white; padding: 6px 10px; border-radius: var(--radius-sm); font-size: 11px; font-family: 'DM Mono', monospace; pointer-events: none; z-index: 9999; white-space: nowrap; opacity: 0; transition: opacity 0.1s; }
+  .timeline-wrap { margin-top: 14px; }
+  .timeline-title { font-size: 11px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .timeline-row { display: grid; grid-template-columns: 80px 40px 60px 1fr 80px; gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .timeline-row.header { color: var(--text-3); font-weight: 600; }
+  .timeline-row.alert-row { background: rgba(192,57,43,0.04); margin: 0 -2px; padding-left: 2px; border-radius: 4px; }
+  .timeline-row.exhaust-row { background: rgba(192,57,43,0.08); margin: 0 -2px; padding-left: 2px; border-radius: 4px; }
+  .tl-date { font-family: 'DM Mono', monospace; color: var(--text-2); }
+  .tl-dur { color: var(--text-3); text-align: right; }
+  .tl-deduct { color: var(--red); font-weight: 600; text-align: right; }
+  .tl-bar-wrap { display: flex; align-items: center; gap: 5px; }
+  .tl-bal { font-family: 'DM Mono', monospace; font-weight: 600; text-align: right; font-size: 12px; }
+  .back-btn { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--blue); cursor: pointer; margin-bottom: 18px; padding: 5px 10px; border-radius: var(--radius-sm); background: var(--blue-light); border: none; font-family: inherit; }
+  .back-btn:hover { background: #d0dcf7; }
+  .send-msg-btn { display: flex; align-items: center; gap: 6px; width: 100%; margin-top: 10px; padding: 8px 12px; background: var(--orange); color: white; border: none; border-radius: var(--radius-sm); font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; transition: background 0.15s; }
+  .send-msg-btn:hover { background: var(--orange-dark); }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: white; border-radius: var(--radius); padding: 24px; width: 460px; max-width: 95vw; box-shadow: var(--shadow-lg); }
+  .modal h3 { font-size: 15px; font-weight: 700; margin-bottom: 14px; }
+  .modal-msg { background: var(--bg); border-radius: var(--radius-sm); padding: 14px; font-size: 13px; color: var(--text); line-height: 1.7; white-space: pre-wrap; border: 1px solid var(--border); margin-bottom: 14px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-btn { padding: 8px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-strong); font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; background: white; color: var(--text); }
+  .modal-btn.primary { background: var(--orange); color: white; border-color: var(--orange); }
+  .modal-btn:hover { opacity: 0.85; }
+  @media (max-width: 768px) {
+    .layout { grid-template-columns: 1fr; }
+    .left-panel { max-height: 40vh; }
+    .overview-grid { grid-template-columns: repeat(2,1fr); }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="brand-dot">BG</div>
+    <div>
+      <div class="brand-name">BeGifted Education</div>
+      <div class="brand-sub">Package Expiry Dashboard</div>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="today-badge" id="today-label"></span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="left-panel">
+    <div class="panel-header">
+      <div class="panel-title">Students</div>
+      <div class="summary-pills" id="filter-pills">
+        <div class="s-pill all active" onclick="setFilter('all')">All <span id="cnt-all">0</span></div>
+        <div class="s-pill notify" onclick="setFilter('notify')">Notify <span id="cnt-notify">0</span></div>
+        <div class="s-pill watch" onclick="setFilter('watch')">Watch <span id="cnt-watch">0</span></div>
+        <div class="s-pill ok" onclick="setFilter('ok')">OK <span id="cnt-ok">0</span></div>
+      </div>
+    </div>
+    <div class="search-wrap">
+      <input class="search-input" type="text" placeholder="Search student or parent..." oninput="handleSearch(this.value)" />
+    </div>
+    <div class="student-list" id="student-list"></div>
+  </div>
+  <div class="right-panel" id="right-panel"></div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3>แจ้งผู้ปกครองทาง LINE</h3>
+    <div class="modal-msg" id="modal-msg"></div>
+    <div class="modal-actions">
+      <button class="modal-btn" onclick="closeModal()">ปิด</button>
+      <button class="modal-btn primary" onclick="copyMsg()">Copy Message</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const TODAY = new Date();
+TODAY.setHours(0,0,0,0);
+
+const DATA = JSON.parse(<?= JSON.stringify(getStudentData()) ?>);
+
+let currentFilter = 'all';
+let currentSearch = '';
+let selectedStudent = null;
+let currentView = 'overview';
+
+function getInitials(name) { return name.split(' ').filter(n=>n&&!n.startsWith('(')).slice(0,2).map(n=>n[0]).join('').toUpperCase(); }
+function avatarColor(i) {
+  const p = [
+    {bg:'#E8EFFC',fg:'#0145A8'},{bg:'#FFF0E6',fg:'#D95F0A'},
+    {bg:'#E8F5EE',fg:'#1A7A4A'},{bg:'#FFF9EC',fg:'#C87D0A'},{bg:'#F3EEFF',fg:'#6B2FD9'}
+  ];
+  return p[i % p.length];
+}
+function worstStatus(pkgs) {
+  if (pkgs.some(p=>p.status==='notify')) return 'notify';
+  if (pkgs.some(p=>p.status==='watch'))  return 'watch';
+  if (pkgs.some(p=>p.status==='ok'))     return 'ok';
+  return 'nodata';
+}
+function statusLabel(s) { return {notify:'Notify Now',watch:'Watch',ok:'OK',nodata:'No Data'}[s]||s; }
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+function balColor(bal) { return bal>=4?'green':bal>=2?'yellow':'red'; }
+function computeCounts() {
+  let n=0,w=0,o=0;
+  DATA.forEach(s=>{
+    const st=worstStatus(s.packages);
+    if(st==='notify')n++; else if(st==='watch')w++; else if(st==='ok')o++;
+  });
+  return {total:DATA.length,notify:n,watch:w,ok:o};
+}
+
+function renderList() {
+  const list = document.getElementById('student-list');
+  const filtered = DATA.filter(s => {
+    const st = worstStatus(s.packages);
+    const matchFilter = currentFilter==='all' || st===currentFilter;
+    const matchSearch = !currentSearch ||
+      s.student.toLowerCase().includes(currentSearch) ||
+      s.parent.toLowerCase().includes(currentSearch);
+    return matchFilter && matchSearch;
+  });
+  if (!filtered.length) {
+    list.innerHTML='<div style="padding:24px;text-align:center;color:var(--text-3);font-size:13px;">No students found</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(s => {
+    const ri = DATA.indexOf(s);
+    const st = worstStatus(s.packages);
+    const pal = avatarColor(ri);
+    const isActive = selectedStudent && selectedStudent.student===s.student;
+    return `<div class="student-item${isActive?' active':''}" onclick="selectStudent(${ri})">
+      <div class="student-avatar" style="background:${pal.bg};color:${pal.fg}">${getInitials(s.student)}</div>
+      <div class="student-info">
+        <div class="student-name">${s.student.split(' ')[0]} ${s.student.split(' ').slice(-1)[0]}</div>
+        <div class="student-sub">Parent: ${s.parent.split(' ')[0]}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+        <span class="status-chip ${st}" style="font-size:10px;padding:2px 7px">${statusLabel(st)}</span>
+        <span class="pkg-count">${s.packages.length} package${s.packages.length>1?'s':''}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderOverview() {
+  const counts = computeCounts();
+  const right = document.getElementById('right-panel');
+  const notifyPkgs = [];
+  DATA.forEach(s => s.packages.filter(p=>p.status==='notify').forEach(p => notifyPkgs.push({student:s,pkg:p})));
+  notifyPkgs.sort((a,b)=>(a.pkg.daysUntilAlert||999)-(b.pkg.daysUntilAlert||999));
+  const watchStudents = DATA.filter(s=>worstStatus(s.packages)==='watch');
+
+  right.innerHTML = `
+    <div class="overview-grid">
+      <div class="metric-card"><div class="metric-label">Total Students</div><div class="metric-value blue">${counts.total}</div><div class="metric-sub">active in system</div></div>
+      <div class="metric-card"><div class="metric-label">Notify Now</div><div class="metric-value red">${counts.notify}</div><div class="metric-sub">credit &lt; 2 now</div></div>
+      <div class="metric-card"><div class="metric-label">Watch</div><div class="metric-value yellow">${counts.watch}</div><div class="metric-sub">within 30 days</div></div>
+      <div class="metric-card"><div class="metric-label">OK / No Data</div><div class="metric-value green">${counts.ok+(counts.total-counts.notify-counts.watch-counts.ok)}</div><div class="metric-sub">no action needed</div></div>
+    </div>
+
+    ${notifyPkgs.length?`
+    <div class="section-head"><h2>Packages requiring action</h2><span class="section-badge">${notifyPkgs.length} packages</span></div>
+    <div class="alert-table"><table>
+      <thead><tr><th>Student</th><th>Parent</th><th>Package</th><th>Actual Credits</th><th>Exhausted</th><th>Days Left</th><th>Status</th><th></th></tr></thead>
+      <tbody>${notifyPkgs.map(({student:s,pkg:p})=>`
+        <tr onclick="selectStudent(${DATA.indexOf(s)})">
+          <td><b>${s.student.split(' ')[0]}</b></td>
+          <td style="color:var(--text-3)">${s.parent}</td>
+          <td style="font-size:12px">${p.name}</td>
+          <td><b style="color:var(--red)">${p.adjustedRemaining}</b></td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${fmtDate(p.exhaustDate)}</td>
+          <td><span style="font-weight:700;color:${p.daysUntilAlert<=7?'var(--red)':'var(--yellow)'}">${p.daysUntilAlert} days</span></td>
+          <td><span class="status-chip notify">Notify Now</span></td>
+          <td onclick="event.stopPropagation();openMsgModal('${s.student}','${s.parent}','${p.name}',${p.adjustedRemaining},'${p.exhaustDate}')" style="color:var(--orange);font-weight:700;font-size:11px;cursor:pointer;white-space:nowrap">LINE ↗</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`:'<div style="padding:20px;text-align:center;color:var(--text-3)">No packages require immediate action.</div>'}
+
+    ${watchStudents.length?`
+    <div class="section-head" style="margin-top:8px"><h2>Watch list</h2><span class="section-badge" style="background:var(--yellow)">${watchStudents.reduce((a,s)=>a+s.packages.filter(p=>p.status==='watch').length,0)} packages</span></div>
+    <div class="alert-table"><table>
+      <thead><tr><th>Student</th><th>Package</th><th>Actual Credits</th><th>Balance &lt; 2 on</th><th>Days Left</th><th>Status</th></tr></thead>
+      <tbody>${watchStudents.map(s=>s.packages.filter(p=>p.status==='watch').map(p=>`
+        <tr onclick="selectStudent(${DATA.indexOf(s)})">
+          <td><b>${s.student.split(' ')[0]}</b></td>
+          <td style="font-size:12px">${p.name}</td>
+          <td>${p.adjustedRemaining}</td>
+          <td style="font-family:'DM Mono',monospace;font-size:12px">${fmtDate(p.alertDate)}</td>
+          <td><span style="font-weight:700;color:var(--yellow)">${p.daysUntilAlert} days</span></td>
+          <td><span class="status-chip watch">Watch</span></td>
+        </tr>`).join('')).join('')}
+      </tbody>
+    </table></div>`:''}
+  `;
+}
+
+function renderDetail(s) {
+  const right = document.getElementById('right-panel');
+  const si = DATA.indexOf(s);
+  const pal = avatarColor(si);
+  right.innerHTML = `
+    <button class="back-btn" onclick="goOverview()">← Back to overview</button>
+    <div class="detail-header">
+      <div class="detail-avatar" style="background:${pal.bg};color:${pal.fg}">${getInitials(s.student)}</div>
+      <div>
+        <div class="detail-name">${s.student}</div>
+        <div class="detail-parent">Parent: ${s.parent}</div>
+        <div class="detail-meta">${s.packages.map(p=>`<span class="detail-tag">${p.name}</span>`).join('')}</div>
+      </div>
+      <div style="margin-left:auto;text-align:right">
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:4px">Overall status</div>
+        <span class="status-chip ${worstStatus(s.packages)}" style="font-size:13px;padding:5px 12px">${statusLabel(worstStatus(s.packages))}</span>
+      </div>
+    </div>
+    <div class="packages-grid">${s.packages.map(p=>renderPackageCard(p,s)).join('')}</div>
+    ${renderCalendar(s)}
+  `;
+}
+
+function renderPackageCard(p, s) {
+  const pct = p.totalCredits>0 ? p.adjustedRemaining/p.totalCredits : 0;
+  const barCol = pct>0.4?'#1A7A4A':pct>0.2?'#D4870A':'#C0392B';
+  const adjCol = p.adjustedRemaining<2?'var(--red)':p.adjustedRemaining<4?'var(--yellow)':'var(--green)';
+
+  const creditBreakdown = p.pendingDeduction>0 ? `
+    <div style="margin-top:10px;padding:10px 12px;background:var(--gray-light);border-radius:var(--radius-sm);font-size:12px;line-height:2">
+      <div style="display:flex;justify-content:space-between;color:var(--text-3)">
+        <span>System shows</span><span>${p.currentRemaining} credits</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;color:var(--yellow)">
+        <span>Pending deduct (teacher feedback pending)</span><span>−${p.pendingDeduction}</span>
+      </div>
+      <div style="border-top:1px solid var(--border);margin-top:4px;padding-top:4px;display:flex;justify-content:space-between;font-weight:700">
+        <span>Actual remaining</span>
+        <span style="color:${adjCol}">${p.adjustedRemaining} credits</span>
+      </div>
+    </div>` : `
+    <div style="margin-top:8px;font-size:13px;color:var(--text-2)">
+      Actual remaining: <b style="color:${adjCol}">${p.adjustedRemaining} credits</b>
+    </div>`;
+
+  return `
+  <div class="pkg-card">
+    <div class="pkg-card-header">
+      <div>
+        <div class="pkg-name">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px">Total: <b style="color:var(--text);font-size:13px">${p.totalCredits}</b> credits</div>
+      </div>
+      <span class="status-chip ${p.status}">${statusLabel(p.status)}</span>
+    </div>
+    <div class="pkg-card-body">
+      ${creditBreakdown}
+
+      <div class="credit-bar-wrap" style="margin-top:12px">
+        <div class="credit-bar-label">
+          <span>0</span>
+          <span style="color:${barCol};font-weight:600">${(pct*100).toFixed(0)}% remaining</span>
+          <span>${p.totalCredits}</span>
+        </div>
+        <div class="credit-bar-track">
+          <div class="credit-bar-fill" style="width:${(pct*100).toFixed(1)}%;background:${barCol}"></div>
+        </div>
+      </div>
+
+      ${p.status!=='nodata'?`
+      <div class="alert-info-box ${p.status}" style="margin-top:10px">
+        ${p.alertDate?`<div class="alert-info-row"><span>Balance &lt; 2 on</span><span>${fmtDate(p.alertDate)}</span></div><div class="alert-info-row"><span>Days until alert</span><span>${p.daysUntilAlert} days</span></div>`:''}
+        ${p.exhaustDate?`<div class="alert-info-row"><span>Package exhausted</span><span>${fmtDate(p.exhaustDate)}</span></div>`:''}
+      </div>`:`
+      <div class="alert-info-box nodata" style="margin-top:10px">
+        <div style="color:var(--text-3);font-size:12px">ไม่มี upcoming sessions ที่วางแผนไว้</div>
+      </div>`}
+
+      ${p.projection.length?`
+      <div class="timeline-wrap">
+        <div class="timeline-title">Credit projection</div>
+        <div class="timeline-row header">
+          <span>Date</span><span style="text-align:right">Min</span><span style="text-align:right">−Cr.</span><span>Balance</span><span></span>
+        </div>
+        ${p.projection.map(r=>{
+          const rowCls = r.flag==='alert'?'alert-row':r.flag==='exhaust'?'exhaust-row':'';
+          const balCls = r.bal<0?'red':r.bal<2?'red':r.bal<4?'yellow':'green';
+          const balPct = Math.max(0,Math.min(1,r.bal/p.totalCredits));
+          return `<div class="timeline-row ${rowCls}">
+            <span class="tl-date">${r.date.slice(5)}</span>
+            <span class="tl-dur">${r.dur}m</span>
+            <span class="tl-deduct">−${r.deduct}</span>
+            <div class="tl-bar-wrap">
+              <div style="flex:1;height:4px;background:var(--gray-light);border-radius:2px;overflow:hidden">
+                <div style="height:100%;width:${(balPct*100).toFixed(1)}%;background:${r.bal<2?'#C0392B':r.bal<4?'#D4870A':'#1A7A4A'};border-radius:2px"></div>
+              </div>
+            </div>
+            <span class="tl-bal" style="color:var(--${balCls})">${r.bal.toFixed(1)}</span>
+          </div>`;
+        }).join('')}
+      </div>`:''}
+
+      ${p.status==='notify'||p.status==='watch'?`
+      <button class="send-msg-btn" onclick="openMsgModal('${s.student}','${s.parent}','${p.name}',${p.adjustedRemaining},'${p.exhaustDate||p.alertDate}')">
+        Send LINE Message to Parent ↗
+      </button>`:''}
+    </div>
+  </div>`;
+}
+
+function renderCalendar(s) {
+  const sessionMap = {};
+  s.packages.forEach(p => {
+    p.projection.forEach(r => {
+      if (!sessionMap[r.date]) sessionMap[r.date] = [];
+      sessionMap[r.date].push({pkg:p.name,flag:r.flag,bal:r.bal,deduct:r.deduct});
+    });
+  });
+  if (!Object.keys(sessionMap).length) return '';
+  const dates = Object.keys(sessionMap).map(d=>new Date(d));
+  const minDate = new Date(Math.min(TODAY,...dates));
+  const maxDate = new Date(Math.max(...dates));
+  maxDate.setMonth(maxDate.getMonth()+1);
+  let monthsHtml='';
+  let cur = new Date(minDate.getFullYear(),minDate.getMonth(),1);
+  while (cur<=maxDate) { monthsHtml+=renderCalMonth(cur,sessionMap); cur.setMonth(cur.getMonth()+1); }
+
+  // Package summary legend
+  const pkgSummaryRows = s.packages.map(p => {
+    const adj = p.adjustedRemaining;
+    let dotColor, statusText;
+    if (adj <= 0) {
+      dotColor = 'var(--red)'; statusText = 'No credits remaining';
+    } else if (adj < 2) {
+      dotColor = 'var(--red)'; statusText = `${adj} credit left — critically low`;
+    } else if (adj < 4) {
+      dotColor = 'var(--yellow)'; statusText = `${adj} credits remaining`;
+    } else {
+      dotColor = 'var(--green)'; statusText = `${adj} credits remaining`;
+    }
+    const exhaustTxt = p.exhaustDate
+      ? ` · exhausted ${fmtDate(p.exhaustDate)}`
+      : (p.alertDate ? ` · drops below 2 on ${fmtDate(p.alertDate)}` : '');
+    return `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:0.5px solid var(--border);border-radius:var(--radius-sm)">
+      <div style="width:10px;height:10px;border-radius:50%;background:${dotColor};flex-shrink:0"></div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:600;color:var(--text)">${p.name}</div>
+        <div style="font-size:11px;color:var(--text-3)">${statusText}${exhaustTxt}</div>
+      </div>
+      <span class="status-chip ${p.status}" style="font-size:10px;padding:2px 8px">${statusLabel(p.status)}</span>
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="calendar-section">
+    <div class="cal-title">Session calendar — credit projection</div>
+    <div class="cal-months-container"><div class="cal-months">${monthsHtml}</div></div>
+    <div class="cal-legend">
+      <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--green-light);border:1.5px solid var(--green)"></div> Credit ≥ 4</div>
+      <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--yellow-light);border:1.5px solid var(--yellow)"></div> Credit 2–4</div>
+      <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--red-light);border:1.5px solid var(--red)"></div> Below 2</div>
+      <div class="cal-leg"><div class="cal-leg-dot" style="background:var(--red)"></div> Exhausted</div>
+    </div>
+    <div style="margin-top:16px">
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Package summary</div>
+      <div style="display:flex;flex-direction:column;gap:6px">${pkgSummaryRows}</div>
+    </div>
+  </div>`;
+}
+
+function renderCalMonth(monthDate, sessionMap) {
+  const monthName = monthDate.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const year=monthDate.getFullYear(), month=monthDate.getMonth();
+  const daysInMonth=new Date(year,month+1,0).getDate();
+  const firstDow=new Date(year,month,1).getDay();
+  const dows=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  let cells=dows.map(d=>`<div class="cal-dow">${d}</div>`).join('');
+  for(let i=0;i<firstDow;i++) cells+=`<div class="cal-day empty"></div>`;
+  const todayStr = TODAY.toISOString().slice(0,10);
+  for(let d=1;d<=daysInMonth;d++){
+    const dateStr=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=dateStr===todayStr;
+    const sessions=sessionMap[dateStr];
+    if(sessions){
+      const wf=sessions.some(s=>s.flag==='exhaust')?'exhaust':sessions.some(s=>s.flag==='alert')?'alert':sessions.some(s=>s.bal<4)?'watch':'ok';
+      const tip=sessions.map(s=>`${s.pkg}: −${s.deduct}cr → ${s.bal.toFixed(1)}`).join(' | ');
+      cells+=`<div class="cal-day session ${wf}${isToday?' today-mark':''}" onmouseenter="showTip(event,'${dateStr}\\n${tip}')" onmouseleave="hideTip()">${d}</div>`;
+    } else {
+      cells+=`<div class="cal-day${isToday?' today-mark':''}"><span style="color:var(--text-3)">${d}</span></div>`;
+    }
+  }
+  return `<div class="cal-month"><div class="cal-month-name">${monthName}</div><div class="cal-grid">${cells}</div></div>`;
+}
+
+function openMsgModal(student, parent, pkg, bal, endDate) {
+  const firstName = student.split(' ')[0];
+  const parentFirst = parent.split(' ')[0];
+  const month = endDate ? new Date(endDate).toLocaleDateString('th-TH', {month:'long', year:'numeric'}) : 'เร็วๆ นี้';
+
+  let creditLine, actionLine;
+
+  if (bal <= 0) {
+    creditLine = `ตอนนี้ package "${pkg}" ของน้อง${firstName} ใช้เครดิตหมดแล้วค่ะ 🙏`;
+    actionLine = `รบกวนติดต่อกลับเพื่อต่อ package ให้น้องได้เลยนะคะ ทางทีมงานพร้อมดูแลและแนะนำแพ็คเกจที่เหมาะสมให้น้องค่ะ เพื่อให้การเรียนของน้องต่อเนื่องไม่สะดุดค่ะ 💛`;
+  } else if (bal < 2) {
+    creditLine = `ตอนนี้ package "${pkg}" ของน้อง${firstName} เหลือเครดิตอีกเพียง ${bal} credit เท่านั้นแล้วค่ะ ใกล้หมดมากๆ เลยค่ะ 🙏`;
+    actionLine = `รบกวนติดต่อกลับเพื่อวางแผนต่อ package ล่วงหน้าได้เลยนะคะ ทางทีมงานพร้อมช่วยดูแลให้น้องเรียนต่อเนื่องได้อย่างราบรื่นค่ะ 💛`;
+  } else {
+    creditLine = `ตอนนี้ package "${pkg}" ของน้อง${firstName} เหลือเครดิตอีกประมาณ ${bal} credits แล้วค่ะ คาดว่าจะหมดในช่วง${month}นี้ค่ะ 🙏`;
+    actionLine = `รบกวนติดต่อกลับเพื่อวางแผนต่อ package ล่วงหน้าได้เลยนะคะ เพื่อให้น้องได้เรียนต่อเนื่องโดยไม่มีสะดุดค่ะ 💛`;
+  }
+
+  const msg =
+`สวัสดีค่ะคุณ${parentFirst} 😊
+
+ทีมงาน BeGifted ขอรบกวนแจ้งให้ทราบเรื่อง package การเรียนของน้อง${firstName} นะคะ
+
+${creditLine}
+
+${actionLine}
+
+หากมีข้อสงสัยหรืออยากสอบถามเพิ่มเติม ติดต่อทีมงานได้เลยนะคะ ยินดีให้คำแนะนำทุกเรื่องเลยค่ะ 🤍`;
+
+  document.getElementById('modal-msg').textContent = msg;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(){document.getElementById('modal-overlay').classList.remove('open');}
+function copyMsg(){
+  navigator.clipboard.writeText(document.getElementById('modal-msg').textContent);
+  const btn=document.querySelector('.modal-btn.primary');
+  btn.textContent='Copied!';
+  setTimeout(()=>btn.textContent='Copy Message',1500);
+}
+function showTip(e,text){
+  const tip=document.getElementById('tooltip');
+  tip.textContent=text.replace(/\\n/g,'\n');
+  tip.style.whiteSpace='pre';
+  tip.style.left=(e.clientX+12)+'px';
+  tip.style.top=(e.clientY-10)+'px';
+  tip.style.opacity='1';
+}
+function hideTip(){document.getElementById('tooltip').style.opacity='0';}
+function selectStudent(idx){selectedStudent=DATA[idx];currentView='detail';renderList();renderDetail(selectedStudent);}
+function goOverview(){selectedStudent=null;currentView='overview';renderList();renderOverview();}
+function setFilter(f){
+  currentFilter=f;
+  document.querySelectorAll('.s-pill').forEach(p=>p.classList.remove('active'));
+  document.querySelector(`.s-pill.${f}`).classList.add('active');
+  renderList();
+}
+function handleSearch(v){currentSearch=v.toLowerCase();renderList();}
+
+document.getElementById('today-label').textContent='Today: '+TODAY.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+const counts=computeCounts();
+document.getElementById('cnt-all').textContent=counts.total;
+document.getElementById('cnt-notify').textContent=counts.notify;
+document.getElementById('cnt-watch').textContent=counts.watch;
+document.getElementById('cnt-ok').textContent=counts.ok;
+renderList();
+renderOverview();
+</script>
+</body>
+</html>
