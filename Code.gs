@@ -79,7 +79,13 @@ function getStudentData() {
       const className = String(row[scCols["Class Name"]]   || "").trim();
       const classSub  = String(row[scCols["Class Subject"]]|| "").trim();
       if (!student || !classSub) continue;
+
+      // Pretest → เช็คที่ Class Name
       if (className.toLowerCase().includes("pretest")) {
+        pretestKeys.add(`${student}|||${classSub}`);
+      }
+      // Trial → เช็คที่ Class Subject
+      if (classSub.toLowerCase().includes("trial")) {
         pretestKeys.add(`${student}|||${classSub}`);
       }
     }
